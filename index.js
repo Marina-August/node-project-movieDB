@@ -6,6 +6,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const Movie = require('./models/movie');
+const Book = require('./models/book');
 
 let app = express();
 
@@ -63,4 +64,38 @@ app.post('/add-movie', async (req, res) => {
 //     ]
 //     res.send(movies);
 // });
+
+// const books = [
+    
+//         {
+//           id: 'b4',
+//           name: 'Book4',
+//           description: 'If you want to learn how to cook, you definately should buy it!',
+//           price: 28,
+//         },
+//       ];
+//  for ( let book of books){
+
+// // Create new book
+// const newBook = new Book({
+//   name: book.name,
+//   description: book.description,
+//   price: book.price
+// });
+
+// // Save a book in DB
+
+// newBook.save()
+//   .then((savedBook) => {
+//     console.log( savedBook);
+//   })
+//   .catch((error) => {
+//     console.error(error);
+//   });
+//  }
+
+app.get('/books', async (req, res) => {
+    const books = await Book.find({});
+    res.send(books);
+});
 app.listen(5000);
