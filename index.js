@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const Movie = require('./models/movie');
 const Book = require('./models/book');
+const Order = require('./models/order');
 
 let app = express();
 
@@ -98,4 +99,31 @@ app.get('/books', async (req, res) => {
     const books = await Book.find({});
     res.send(books);
 });
+
+// Add new Customer/Order
+app.post('/add-order', async (req, res) => {
+    try {
+        
+        //const { title, image, rating } = req.body;
+        const name = req.body.name;
+        const street = req.body.street;
+        const postalCode = req.body.postalCode;
+        const city = req.body.city;
+        console.log(req);
+        console.log(req.body)
+        const newOrder = new Order({
+            name,
+            street,
+            postalCode,
+            city
+        });
+
+      const savedOrder = await newOrder.save();
+  
+      res.status(201).json(savedOrder);
+    } catch (error) {
+      res.status(500).json({ error });
+    }
+});  
+
 app.listen(5000);
