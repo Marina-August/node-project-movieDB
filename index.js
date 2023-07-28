@@ -8,8 +8,22 @@ const cors = require('cors');
 const Movie = require('./models/movie');
 const Book = require('./models/book');
 const Order = require('./models/order');
+const OrderProduct = require('./models/redux-order-product');
+const User = require('./models/authMovieDatabase');
+const { sign, verify } = require('jsonwebtoken');
 
 let app = express();
+
+const KEY = 'suomalainen';
+
+function createJSONToken(username) {
+  return sign({ username }, KEY, { expiresIn: '1h' });
+}
+
+function validateJSONToken(token) {
+  return verify(token, KEY);
+}
+
 
 // ------------------ DB - start
 const uri = "mongodb+srv://marina:SS0uiOo8qkJANgc2@marinacluster.nyhy8c8.mongodb.net/?retryWrites=true&w=majority";
@@ -109,8 +123,8 @@ app.post('/add-order', async (req, res) => {
         const street = req.body.street;
         const postalCode = req.body.postalCode;
         const city = req.body.city;
-        console.log(req);
-        console.log(req.body)
+        
+        console.log(req.body.orderedItems)
         const newOrder = new Order({
             name,
             street,
@@ -122,8 +136,109 @@ app.post('/add-order', async (req, res) => {
   
       res.status(201).json(savedOrder);
     } catch (error) {
+        console.log(error);
       res.status(500).json({ error });
     }
 });  
+
+
+// OrderProduct
+
+app.get('/product', async (req, res) => {
+    const products = await OrderProduct.find({});
+    res.send(products);
+});
+
+// Add new Order
+app.put('/product', async (req, res) => {
+    try {
+        console.log('/product');
+        //const { title, image, rating } = req.body;
+        const title = req.body.title;
+        const price = req.body.price;
+        const amount = req.body.amount;
+        const totalPrice = req.body.totalPrice;
+        
+        console.log(req.body)
+        const newOrder = new OrderProduct({
+            title,
+            price,
+            amount,
+            totalPrice
+        });
+
+      const savedOrder = await newOrder.save();
+  
+      res.status(201).json(savedOrder);
+    } catch (error) {
+        console.log(error);
+      res.status(500).json({ error });
+    }
+}); 
+
+// ---Add authentication Movie DB---
+
+let bcrypt = require('bcryptjs');
+
+app.post('/signup', async (req, res) => {
+    try {
+        const username = req.body.login;
+        const hashedPassword = bcrypt.hashSync(req.body.password, 8);
+
+        const users = await User.find({});
+        for (let i = 0; i < users.length; i++){
+            console.log(username, users[i].username )
+            if (username == users[i].username){
+                return res.status(401).json({ message: 'The Username exists.' });
+            }
+        }
+
+        // const user = await User.findOne({ username });
+        // if (user) {
+        //     return res.status(401).json({ message: 'The Username already exists.' });
+        //   } 
+
+        const newUser = new User({
+        username,
+        password: hashedPassword,
+        });
+
+        const savedUser = await newUser.save();
+
+        const token = createJSONToken(username);
+        
+      res.status(201).json({savedUser,token});
+    } catch (error) {
+      console.error('Error saving User:', error);
+      res.status(500).json({ error: 'Failed to save user' });
+    }
+});  
+
+app.post('/login', async (req, res) => {
+    try {
+        const username = req.body.login;
+        const password = req.body.password;
+
+        const user = await User.findOne({ username })
+        if (!user){
+            return res.status(401).json({ message: 'The Username is not found.' });
+            } 
+        const passwordMatch = await bcrypt.compare(password, user.password);
+
+
+        if (!passwordMatch) {
+            return res.status(401).json({ message: 'Invalid password.' });
+        }
+        const token = createJSONToken(username);
+        console.log(token);
+
+        res.status(200).json({ message: 'Successful login.', token:token});
+  
+    } catch (error) {
+      console.error('Error login:', error);
+      res.status(500).json({ error: 'Failed to login' });
+    }
+});  
+
 
 app.listen(5000);
