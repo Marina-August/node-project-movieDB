@@ -24,6 +24,27 @@ function validateJSONToken(token) {
   return verify(token, KEY);
 }
 
+// Middleware to verify JWT token
+function verifyToken(req, res, next) {
+    const token = req.headers.authorization;
+  
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided.' });
+    }
+  
+    verify(token.replace('Bearer ', ''), KEY, (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ message: 'Failed to authenticate token.' });
+      }
+  
+      req.user = decoded; // Store the user information in the request object
+      next();
+    });
+  }
+  
+  
+  
+
 
 // ------------------ DB - start
 const uri = "mongodb+srv://marina:SS0uiOo8qkJANgc2@marinacluster.nyhy8c8.mongodb.net/?retryWrites=true&w=majority";
@@ -41,6 +62,12 @@ connect();
 
 app.use(express.json()); // Add this line to parse JSON request bodies
 app.use(cors());
+
+// Protected route that requires authentication
+app.get('/api/protected', verifyToken, (req, res) => {
+    const user = req.user; // Access user information from the request object
+    res.json({ message: 'Protected route accessed!', user });
+  });
 
 app.get('/db-movies', async (req, res) => {
     const movies = await Movie.find({});
