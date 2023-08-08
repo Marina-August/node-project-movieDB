@@ -40,6 +40,7 @@ function verifyToken(req, res, next) {
       req.user = decoded; // Store the user information in the request object
       next();
     });
+    
   }
   
   
@@ -70,20 +71,45 @@ app.get('/api/protected', verifyToken, (req, res) => {
   });
 
 app.get('/db-movies', async (req, res) => {
-    const movies = await Movie.find({});
+    const username = req.query.username;
+    const user = await User.findOne({ username });
+    const creator = user.id;
+    console.log(creator);
+    const movies = await Movie.find({ creator });
     res.send(movies);
 });
 
 // Endpoint to add a new movie
 app.post('/add-movie', async (req, res) => {
     try {
-
+        
         //const { title, image, rating } = req.body;
+        const username = req.body.username;
         const title = req.body.title;
         const image = req.body.image;
         const rating = req.body.rating;
         
+        let creator ='';
+
+        // Find user id using loop
+
+        // const users = await User.find({});
+        // for (let i = 0; i<users.length; i++){
+        //     if (users[i].username === username){
+        //       creator = users[i]._id;
+        //     }
+        // }
+
+        // FindOne user
+        const user = await User.findOne({ username })
+        creator = user.id;
+
+        console.log(creator);
+
+
+
         const newMovie = new Movie({
+            creator,
             title,
             image,
             rating,
